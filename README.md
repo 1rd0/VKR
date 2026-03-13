@@ -118,6 +118,14 @@ python -c "from app.services.embeddings import TextEncoder; TextEncoder('ai-fore
 - поведение на разных версиях документов;
 - эффект от будущего contradiction-модуля.
 
+## Baseline evaluation
+
+Для baseline-версии заведен отдельный набор метрик в [evaluation/baseline_rag_v1/README.md](/home/rabdel/projects/sVKR/evaluation/baseline_rag_v1/README.md).
+
+Шаблон для фиксации результатов лежит в [evaluation/baseline_rag_v1/metrics_template.csv](/home/rabdel/projects/sVKR/evaluation/baseline_rag_v1/metrics_template.csv).
+
+Это удобно для ВКР: baseline не размазывается по заметкам, а оформлен как отдельная контрольная точка, с которой потом можно честно сравнивать улучшения.
+
 ## Что делать дальше после baseline
 
 Следующий логичный шаг:

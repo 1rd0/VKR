@@ -1,0 +1,11 @@
+run_id,split,metric_group,metric_name,k,value,unit,notes
+baseline_rag_v1_dev_001,dev,retrieval,Recall,5,,ratio,
+baseline_rag_v1_dev_001,dev,retrieval,Recall,10,,ratio,
+baseline_rag_v1_dev_001,dev,retrieval,MRR,5,,ratio,
+baseline_rag_v1_dev_001,dev,retrieval,nDCG,10,,ratio,
+baseline_rag_v1_dev_001,dev,answer,answer_correctness,,,"1-5",
+baseline_rag_v1_dev_001,dev,answer,answer_faithfulness,,,"1-5",
+baseline_rag_v1_dev_001,dev,answer,answer_completeness,,,"1-5",
+baseline_rag_v1_dev_001,dev,system,latency_search_ms,,,ms,
+baseline_rag_v1_dev_001,dev,system,latency_answer_ms,,,ms,
+baseline_rag_v1_dev_001,dev,system,context_tokens,,,tokens,
