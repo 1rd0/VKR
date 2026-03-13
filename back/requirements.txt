@@ -1,0 +1,15 @@
+fastapi==0.116.0
+uvicorn[standard]==0.35.0
+pydantic==2.11.0
+pydantic-settings==2.8.1
+qdrant-client==1.13.3
+transformers==4.49.0
+torch==2.6.0
+numpy==2.2.4
+PyMuPDF==1.25.4
+beautifulsoup4==4.13.3
+lxml==5.3.1
+groq==0.20.0
+python-multipart==0.0.20
+pandas==2.2.3
+

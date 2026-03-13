@@ -1,0 +1,8 @@
+doc_id,doc_type,title,version,valid_from,valid_to,section,subsection,topic,file_path,is_current
+kbo-2024-services,KBO,Договор КБО физлиц,2024-09-16,2024-09-16,2025-02-02,11,outline,services_outline,back/data/raw/kbo/kbo__2024-09-16__2024-09-16__services_outline.md,false
+kbo-2025-services,KBO,Договор КБО физлиц,2025-02-03,2025-02-03,,11,outline,services_outline,back/data/raw/kbo/kbo__2025-02-03__2025-02-03__services_outline.md,true
+kbo-2024-salary,KBO,Договор КБО физлиц,2024-09-16,2024-09-16,2025-02-02,1,terms,salary_piggybank,back/data/raw/kbo/kbo__2024-09-16__2024-09-16__salary_piggybank.md,false
+kbo-2025-salary,KBO,Договор КБО физлиц,2025-02-03,2025-02-03,,11.2,копилка_для_зарплаты,salary_piggybank,back/data/raw/kbo/kbo__2025-02-03__2025-02-03__salary_piggybank.md,true
+kbo-2024-roundup,KBO,Договор КБО физлиц,2024-09-16,2024-09-16,2025-02-02,1,terms,roundup_piggybank,back/data/raw/kbo/kbo__2024-09-16__2024-09-16__roundup_piggybank.md,false
+kbo-2025-roundup,KBO,Договор КБО физлиц,2025-02-03,2025-02-03,,1,terms,roundup_piggybank,back/data/raw/kbo/kbo__2025-02-03__2025-02-03__roundup_piggybank.md,true
+kbo-2025-orange,KBO,Договор КБО физлиц,2025-02-03,2025-02-03,,1,terms,orange_card_definition,back/data/raw/kbo/kbo__2025-02-03__2025-02-03__orange_card_definition.md,true

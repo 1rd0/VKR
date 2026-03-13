@@ -1,0 +1,51 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - ./qdrant_storage:/qdrant/storage
+    restart: unless-stopped
+
+  api:
+    profiles: ["fullstack"]
+    build:
+      context: ./back
+    env_file:
+      - .env
+    environment:
+      QDRANT_URL: http://qdrant:6333
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-rag_baseline}
+      EMBEDDING_MODEL_NAME: ${EMBEDDING_MODEL_NAME:-ai-forever/ru-en-RoSBERTa}
+      EMBEDDING_POOLING: ${EMBEDDING_POOLING:-cls}
+      EMBEDDING_QUERY_PREFIX: ${EMBEDDING_QUERY_PREFIX:-search_query:}
+      EMBEDDING_DOCUMENT_PREFIX: ${EMBEDDING_DOCUMENT_PREFIX:-search_document:}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: ${GROQ_MODEL:-llama-3.1-8b-instant}
+      TOP_K: ${TOP_K:-5}
+      CHUNK_SIZE: ${CHUNK_SIZE:-900}
+      CHUNK_OVERLAP: ${CHUNK_OVERLAP:-150}
+      BATCH_SIZE: ${BATCH_SIZE:-16}
+      DATA_DIR: /app/data
+      HF_HOME: /app/.cache/huggingface
+    depends_on:
+      - qdrant
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./back/data:/app/data
+      - ./back/.cache:/app/.cache
+    restart: unless-stopped
+
+  demo:
+    profiles: ["fullstack"]
+    build:
+      context: ./front
+    environment:
+      API_URL: http://api:8000
+    depends_on:
+      - api
+    ports:
+      - "8501:8501"
+    restart: unless-stopped
