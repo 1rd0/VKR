@@ -6,3 +6,7 @@ kbo-2025-salary,KBO,Договор КБО физлиц,2025-02-03,2025-02-03,,11
 kbo-2024-roundup,KBO,Договор КБО физлиц,2024-09-16,2024-09-16,2025-02-02,1,terms,roundup_piggybank,back/data/raw/kbo/kbo__2024-09-16__2024-09-16__roundup_piggybank.md,false
 kbo-2025-roundup,KBO,Договор КБО физлиц,2025-02-03,2025-02-03,,1,terms,roundup_piggybank,back/data/raw/kbo/kbo__2025-02-03__2025-02-03__roundup_piggybank.md,true
 kbo-2025-orange,KBO,Договор КБО физлиц,2025-02-03,2025-02-03,,1,terms,orange_card_definition,back/data/raw/kbo/kbo__2025-02-03__2025-02-03__orange_card_definition.md,true
+other-sbp-transfer-limits,other,"Лимиты переводов по СБП",2025-12-19,unknown,не указано,"Сколько можно перевести через СБП без комиссии","Лимит переводов по СБП за месяц",sbp_transfer_limits,back/data/raw/other/1.md,false
+other-sbp-store-payment,other,"Как оплатить по СБП в магазине: актуальная инструкция",2026-02-17,unknown,не указано,"Способы оплаты на кассе","Оплата по QR-коду",sbp_store_payment,back/data/raw/other/2.md,false
+other-sbp-gov-payment-timing,other,"Как СБП влияет на сроки зачисления государственных платежей",2026-02-24,unknown,не указано,"Как СБП влияет на сроки зачисления платежей","Сравнение сроков зачисления",sbp_gov_payment_timing,back/data/raw/other/3.md,false
+other-sbp-transfer-limits-alt,other,"Лимиты переводов по СБП",2025-12-19,unknown,не указано,"Сколько можно перевести через СБП без комиссии","Лимит переводов по СБП за месяц",sbp_transfer_limits_alt,back/data/raw/other/4.md,false
