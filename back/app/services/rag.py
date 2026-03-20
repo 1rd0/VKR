@@ -1,3 +1,9 @@
+"""Основной orchestration-слой RAG-системы.
+
+Этот класс связывает все этапы пайплайна:
+парсинг файлов -> чанкинг -> эмбеддинги -> Qdrant -> LLM/fallback.
+"""
+
 from functools import cached_property
 from pathlib import Path
 from uuid import NAMESPACE_URL, uuid5
@@ -15,11 +21,14 @@ from app.services.qdrant_store import QdrantStore
 class BaselineRAGService:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
+        # Нужные директории подготавливаем сразу при старте,
+        # чтобы позже запись файлов не падала из-за отсутствия папок.
         self.settings.raw_dir.mkdir(parents=True, exist_ok=True)
         self.settings.upload_dir.mkdir(parents=True, exist_ok=True)
 
     @cached_property
     def encoder(self) -> TextEncoder:
+        # Ленивое создание: тяжелая embedding-модель загрузится только когда реально понадобится.
         return TextEncoder(
             model_name=self.settings.embedding_model_name,
             batch_size=self.settings.batch_size,
@@ -30,6 +39,7 @@ class BaselineRAGService:
 
     @cached_property
     def store(self) -> QdrantStore:
+        # Аналогично, подключение к Qdrant создаем при первом обращении.
         return QdrantStore(
             url=self.settings.qdrant_url,
             collection_name=self.settings.qdrant_collection,
@@ -37,6 +47,7 @@ class BaselineRAGService:
 
     @cached_property
     def answer_generator(self) -> AnswerGenerator:
+        # Генератор ответа можно переиспользовать между запросами.
         return AnswerGenerator(
             api_key=self.settings.groq_api_key,
             model_name=self.settings.groq_model,
@@ -44,6 +55,7 @@ class BaselineRAGService:
         )
 
     def health(self) -> dict[str, object]:
+        # Health не только говорит "API живо", но и показывает состояние индекса.
         try:
             indexed_chunks = self.store.count()
             status = "ok"
@@ -60,6 +72,7 @@ class BaselineRAGService:
         }
 
     def ingest(self, request: IngestRequest) -> IngestResponse:
+        # Собираем общий список файлов из директории и явных путей.
         files: list[Path] = []
         failed_files: list[str] = []
 
@@ -76,12 +89,14 @@ class BaselineRAGService:
             else:
                 failed_files.append(value)
 
+        # Убираем дубликаты, сохраняя порядок появления.
         deduplicated_files = list(dict.fromkeys(files))
         chunks_indexed = 0
         files_indexed = 0
 
         for path in deduplicated_files:
             try:
+                # На каждом файле строим список DocumentChunk.
                 chunks = self._build_chunks(path)
             except Exception:
                 failed_files.append(str(path))
@@ -91,6 +106,7 @@ class BaselineRAGService:
                 failed_files.append(str(path))
                 continue
 
+            # Сначала превращаем чанки в векторы, затем отправляем пары (chunk, vector) в Qdrant.
             vectors = self.encoder.encode_documents(chunk.text for chunk in chunks)
             self.store.upsert(chunks, vectors)
             chunks_indexed += len(chunks)
@@ -109,6 +125,7 @@ class BaselineRAGService:
         if self.store.count() == 0:
             raise IndexError("No index available. Ingest documents first.")
         actual_limit = limit or self.settings.top_k
+        # Вопрос пользователя кодируется в тот же векторный space, что и документы.
         query_vector = self.encoder.encode_query(query)
         hits = self.store.search(query_vector=query_vector, limit=actual_limit)
         return SearchResponse(query=query, hits=self._serialize_hits(hits))
@@ -117,6 +134,7 @@ class BaselineRAGService:
         if not question.strip():
             raise ValueError("Question must not be empty.")
         actual_top_k = top_k or self.settings.top_k
+        # Генерация ответа всегда опирается на retrieval; "ask" не обходит поиск.
         search_response = self.search(query=question, limit=actual_top_k)
         hits = [self._deserialize_hit(hit) for hit in search_response.hits]
         answer, used_llm = self.answer_generator.answer(question=question, hits=hits)
@@ -132,6 +150,7 @@ class BaselineRAGService:
         )
 
     def save_upload(self, filename: str, content: bytes) -> Path:
+        # Берем только basename, чтобы имя файла не могло записать данные вне upload_dir.
         safe_name = Path(filename).name
         destination = self.settings.upload_dir / safe_name
         destination.write_bytes(content)
@@ -143,7 +162,9 @@ class BaselineRAGService:
         return sorted(path for path in directory.rglob("*") if is_supported_file(path))
 
     def _build_chunks(self, path: Path) -> list[DocumentChunk]:
+        # 1. Достаем "сырой" текст из файла.
         text = extract_text(path)
+        # 2. Режем длинный текст на более короткие перекрывающиеся части.
         chunk_texts = split_text(
             text=text,
             chunk_size=self.settings.chunk_size,
@@ -152,6 +173,8 @@ class BaselineRAGService:
 
         chunks: list[DocumentChunk] = []
         for index, chunk_text in enumerate(chunk_texts):
+            # ID зависит от пути, позиции и содержимого чанка:
+            # это дает стабильный идентификатор при повторной индексации того же текста.
             identifier = self._make_chunk_id(path=path, index=index, text=chunk_text)
             chunks.append(
                 DocumentChunk(
@@ -169,10 +192,12 @@ class BaselineRAGService:
 
     @staticmethod
     def _make_chunk_id(path: Path, index: int, text: str) -> str:
+        # UUID5 детерминированный: одинаковый вход -> одинаковый ID.
         return str(uuid5(NAMESPACE_URL, f"{path}:{index}:{text}"))
 
     @staticmethod
     def _serialize_hits(hits: list[SearchHit]) -> list[ChunkPayload]:
+        # Преобразуем внутренние SearchHit в Pydantic-схему для API-ответа.
         return [
             ChunkPayload(
                 point_id=hit.point_id,
@@ -186,6 +211,7 @@ class BaselineRAGService:
 
     @staticmethod
     def _deserialize_hit(payload: ChunkPayload) -> SearchHit:
+        # Обратное преобразование: удобно передавать результаты поиска в AnswerGenerator.
         return SearchHit(
             point_id=payload.point_id,
             score=payload.score,

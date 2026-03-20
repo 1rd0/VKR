@@ -12,6 +12,7 @@ back/.pytest_cache/
 back/.cache/
 back/.cache/huggingface/
 back/.cache/huggingface/**
+back/eval/results/
 front/.venv/
 front/__pycache__/
 back/data/raw/

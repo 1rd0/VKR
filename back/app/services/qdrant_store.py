@@ -1,3 +1,9 @@
+"""Адаптер для работы с Qdrant.
+
+Этот слой изолирует детали векторной БД от остального приложения:
+сервис RAG просто отдает сюда чанки и векторы.
+"""
+
 from typing import Any
 
 from qdrant_client import QdrantClient, models
@@ -11,6 +17,8 @@ class QdrantStore:
         self.client = QdrantClient(url=url)
 
     def collection_exists(self) -> bool:
+        # В новых версиях клиента есть удобный `collection_exists`,
+        # но оставляем fallback для совместимости.
         if hasattr(self.client, "collection_exists"):
             return bool(self.client.collection_exists(self.collection_name))
 
@@ -21,6 +29,7 @@ class QdrantStore:
             return False
 
     def ensure_collection(self, vector_size: int) -> None:
+        # Коллекция создается лениво, только когда мы впервые знаем размер вектора.
         if self.collection_exists():
             return
 
@@ -39,6 +48,7 @@ class QdrantStore:
         self.ensure_collection(vector_size=len(vectors[0]))
         points = []
         for chunk, vector in zip(chunks, vectors, strict=True):
+            # Основной текст и путь кладем в payload, чтобы потом вернуть их в ответе поиска.
             payload = {
                 "text": chunk.text,
                 "source_path": chunk.source_path,
@@ -58,6 +68,7 @@ class QdrantStore:
         if not self.collection_exists():
             return []
 
+        # Qdrant возвращает ближайшие вектора по cosine distance.
         response = self.client.query_points(
             collection_name=self.collection_name,
             query=query_vector,
@@ -68,6 +79,8 @@ class QdrantStore:
 
         hits: list[SearchHit] = []
         for point in points:
+            # Нормализуем ответ Qdrant к нашей внутренней модели SearchHit,
+            # чтобы остальная часть системы не зависела от формата клиента.
             payload: dict[str, Any] = dict(point.payload or {})
             hits.append(
                 SearchHit(
@@ -81,8 +94,8 @@ class QdrantStore:
         return hits
 
     def count(self) -> int:
+        # Используется в health-check и чтобы понять, готов ли индекс к поиску.
         if not self.collection_exists():
             return 0
         result = self.client.count(collection_name=self.collection_name, exact=True)
         return int(result.count)
-

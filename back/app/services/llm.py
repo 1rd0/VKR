@@ -1,3 +1,5 @@
+"""Генерация ответа поверх retrieval-результатов."""
+
 from groq import Groq
 
 from app.models import SearchHit
@@ -7,6 +9,7 @@ class AnswerGenerator:
     def __init__(self, api_key: str | None, model_name: str, allow_fallback_answer: bool) -> None:
         self.model_name = model_name
         self.allow_fallback_answer = allow_fallback_answer
+        # Если ключа нет, сервис все равно работает, но отвечает fallback-режимом без LLM.
         self.client = Groq(api_key=api_key) if api_key else None
 
     @property
@@ -14,8 +17,10 @@ class AnswerGenerator:
         return self.client is not None
 
     def build_context(self, hits: list[SearchHit]) -> str:
+        # Собираем компактный контекст: LLM видит только top-k найденных фрагментов.
         fragments = []
         for index, hit in enumerate(hits, start=1):
+            # Ограничиваем длину сниппета, чтобы не раздувать prompt и не тратить лишние токены.
             snippet = hit.text[:1200]
             fragments.append(f"[{index}] source={hit.source_path}\n{snippet}")
         return "\n\n".join(fragments)
@@ -32,6 +37,8 @@ class AnswerGenerator:
             {
                 "role": "system",
                 "content": (
+                    # System-prompt задает рамки: отвечать только по контексту,
+                    # а не придумывать знания "из головы".
                     "Ты помощник для RAG-системы. Отвечай только на основе контекста. "
                     "Если в контексте не хватает данных, так и скажи. "
                     "В конце кратко перечисли источники, которые использовал."
@@ -52,9 +59,11 @@ class AnswerGenerator:
             content = response.choices[0].message.content or ""
             return content.strip(), True
         except Exception:
+            # При любой ошибке LLM не падаем целиком, а возвращаем retrieval-only ответ.
             return self._fallback_answer(question, hits), False
 
     def _fallback_answer(self, question: str, hits: list[SearchHit]) -> str:
+        # Fallback нужен, чтобы API оставался полезным даже без внешней LLM.
         snippets = []
         for index, hit in enumerate(hits[:3], start=1):
             snippets.append(f"{index}. {hit.text[:280]} (source: {hit.source_path})")
@@ -67,4 +76,3 @@ class AnswerGenerator:
             f"LLM недоступна, поэтому ниже собраны самые близкие фрагменты по запросу '{question}'.\n"
             f"{joined}"
         )
-

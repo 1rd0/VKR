@@ -1,14 +1,28 @@
+"""Централизованные настройки backend-приложения.
+
+Pydantic Settings умеет брать значения из переменных окружения и `.env`,
+поэтому параметры моделей, API и путей удобно держать в одном месте.
+"""
+
 from functools import lru_cache
 from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# `PROJECT_ROOT` нужен для поиска общих файлов репозитория, а `BACKEND_ROOT`
+# позволяет отдельно поддерживать `.env` внутри `back/`, если это удобнее.
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 
 
 class Settings(BaseSettings):
+    """Все настраиваемые параметры системы.
+
+    Значения по умолчанию позволяют поднять baseline почти без конфигурации,
+    а переменные окружения дают быстро переопределять нужные части.
+    """
+
     app_name: str = "rag-baseline"
     api_host: str = "0.0.0.0"
     api_port: int = 8000
@@ -35,13 +49,16 @@ class Settings(BaseSettings):
 
     @property
     def raw_dir(self) -> Path:
+        # Директория для заранее подготовленных файлов корпуса.
         return self.data_dir / "raw"
 
     @property
     def upload_dir(self) -> Path:
+        # Директория, куда API кладет файлы, загруженные через `/ingest/files`.
         return self.data_dir / "uploads"
 
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
+    # Кешируем настройки, чтобы во всем приложении использовать один и тот же объект.
     return Settings()
